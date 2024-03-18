@@ -1,43 +1,34 @@
 package LojaDeCarros;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
+import java.rmi.*;
+import java.rmi.server.*;
+import java.rmi.registry.*;
 
-public class ServidorAutenticacao {
+public class ServidorAutenticacao extends UnicastRemoteObject implements AutenticacaoRemota {
+    private static final long serialVersionUID = 1L;
+
+	protected ServidorAutenticacao() throws RemoteException {
+        super();
+    }
+
+    @Override
+    public boolean autenticar(String usuario, String senha) throws RemoteException {
+        return usuario.equals("admin") && senha.equals("admin123");
+    }
+
     public static void main(String[] args) {
         try {
-            ServerSocket serverSocket = new ServerSocket(4097);
+            Registry registry = LocateRegistry.createRegistry(4097);
+            registry.rebind("ServidorAutenticacao", new ServidorAutenticacao());
+            System.out.println("Servidor de autenticação iniciado.");
             
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                
-                out.println("Usuário:");
-                String usuario = in.readLine();
-                out.println("Senha:");
-                String senha = in.readLine();
-                
-                if (usuario.equals("admin") && senha.equals("admin123")) {
-                    out.println("Autenticação bem-sucedida!");
-                    iniciarServidorLojadeCarros();
-                } else {
-                    out.println("Usuário ou senha incorretos!");
-                }
-                
-                clientSocket.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
-    private static void iniciarServidorLojadeCarros() {
-        try {
-            System.out.println("ServidorLojadeCarros iniciado!");
+            try (Socket gatewaySocket = new Socket("localhost", 4096)) {
+				PrintWriter outToGateway = new PrintWriter(gatewaySocket.getOutputStream(), true);
+				outToGateway.println("Servidor de Autenticação conectado.");
+			}
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
