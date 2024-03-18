@@ -14,6 +14,7 @@ public class ServidorGateway {
 
             Timer timer = new Timer();
             timer.schedule(new TimerTask() {
+            	
                 @Override
                 public void run() {
                     System.out.println("Aguardando conexões...");

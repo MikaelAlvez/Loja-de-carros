@@ -32,18 +32,10 @@ class ClienteHandler implements Runnable {
         }
     }
     private String encaminharSolicitacaoParaServidor(String mensagem) {
-        // Lógica para decidir qual servidor processará a mensagem
-        // Por exemplo, você pode verificar o tipo de mensagem e encaminhar para o servidor apropriado
-        // Aqui, para fins de exemplo, sempre encaminhamos para o ServidorAutenticacao
-        // Você precisará implementar essa lógica com base nos requisitos do seu sistema.
         return enviarParaServidorAutenticacao(mensagem);
     }
 
     private String enviarParaServidorAutenticacao(String mensagem) {
-        // Aqui, você implementará a lógica para se comunicar com o servidor de autenticação
-        // Pode ser via sockets, RMI, ou qualquer outro método de comunicação definido
-        // Este é apenas um esboço básico. Você precisa implementar a lógica completa aqui.
-        // Vou fornecer um exemplo simulado simples:
         return "Resposta do Servidor de Autenticação: Usuário autenticado com sucesso";
     }
 }
