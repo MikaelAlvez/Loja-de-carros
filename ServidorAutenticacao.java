@@ -24,10 +24,10 @@ public class ServidorAutenticacao extends UnicastRemoteObject implements Autenti
             registry.rebind("ServidorAutenticacao", new ServidorAutenticacao());
             System.out.println("Servidor de autenticação iniciado.");
             
-            try (Socket gatewaySocket = new Socket("localhost", 4096)) {
+            /*try (Socket gatewaySocket = new Socket("localhost", 4096)) {
 				PrintWriter outToGateway = new PrintWriter(gatewaySocket.getOutputStream(), true);
 				outToGateway.println("Servidor de Autenticação conectado.");
-			}
+			}*/
             
         } catch (Exception e) {
             e.printStackTrace();

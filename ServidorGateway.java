@@ -2,11 +2,21 @@ package LojaDeCarros;
 
 import java.io.*;
 import java.net.*;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class ServidorGateway {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws RemoteException, NotBoundException {
+    	
+    	Registry registry = LocateRegistry.getRegistry(4097);
+        AutenticacaoRemota serv = (AutenticacaoRemota) registry.lookup("ServidorAutenticacao");
+
+        System.out.println(serv.autenticar("admin", "admin123"));
+    	
         try (ServerSocket serverSocket = new ServerSocket(4096, 0, InetAddress.getLocalHost())) {
             System.out.println("Servidor Gateway iniciado." +
                     " [Porta: " + serverSocket.getLocalPort() + ", Endereço IP: " + serverSocket.getInetAddress().getHostAddress() + ", HostName: " + serverSocket.getInetAddress().getHostName() + "]\n");
@@ -18,7 +28,9 @@ public class ServidorGateway {
                     System.out.println("Aguardando conexões...");
                 }
             }, 0, 15000);
-
+            
+            
+            
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 BufferedReader inFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -51,6 +63,6 @@ public class ServidorGateway {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        } 
     }
 }
