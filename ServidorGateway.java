@@ -1,68 +1,127 @@
 package LojaDeCarros;
 
-import java.io.*;
-import java.net.*;
+import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.List;
 
-public class ServidorGateway {
-    public static void main(String[] args) throws RemoteException, NotBoundException {
-    	
-    	Registry registry = LocateRegistry.getRegistry(4097);
-        AutenticacaoRemota serv = (AutenticacaoRemota) registry.lookup("ServidorAutenticacao");
+public class ServidorGateway implements GatewayRemoto {
 
-        System.out.println(serv.autenticar("admin", "admin123"));
-    	
-        try (ServerSocket serverSocket = new ServerSocket(4096, 0, InetAddress.getLocalHost())) {
-            System.out.println("Servidor Gateway iniciado." +
-                    " [Porta: " + serverSocket.getLocalPort() + ", Endereço IP: " + serverSocket.getInetAddress().getHostAddress() + ", HostName: " + serverSocket.getInetAddress().getHostName() + "]\n");
+	static String authenticationHostName = "Authentication";
+	static String storageHostName = "Storage";
+	static AutenticacaoRemota authServer;
+	static LojaDeCarrosRemota storServer;
+	@SuppressWarnings("exports")
+	public static Registry register;
+	
+	public static void main(String[] args) {
+		
+		ServidorGateway gateway = new ServidorGateway();
+		
+		try {
+			Registry authRegister = LocateRegistry.getRegistry("127.0.0.1", 4097);
+			authServer = (AutenticacaoRemota) authRegister.lookup(authenticationHostName);
+			
+			Registry stgRegister = LocateRegistry.getRegistry("127.0.0.2", 4098);
+			storServer = (LojaDeCarrosRemota) stgRegister.lookup(storageHostName);
+			
+			GatewayRemoto protocol = (GatewayRemoto) UnicastRemoteObject.exportObject(gateway, 0);
+			
+			LocateRegistry.createRegistry(4099);
+			register = LocateRegistry.getRegistry(4099);
+			register.bind("Gateway", protocol);
+			
+			System.out.println("Gateway ligado...");
+			
+		} catch (RemoteException | AlreadyBoundException | NotBoundException e) {
+			e.printStackTrace();
+		}
+		
+	}
 
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    System.out.println("Aguardando conexões...");
-                }
-            }, 0, 15000);
-            
-            
-            
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
-                BufferedReader inFromClient = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                
-                String message = inFromClient.readLine();
-                System.out.println(message);
-                
-                System.out.println("Cliente conectado: " + clientSocket);
+	@Override
+	public void register(Usuarios newUser) {
+		try {
+			authServer.registerUser(newUser);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@Override
+	public Usuarios login(String cpf, String password) {
+		try {
+			Usuarios connected = authServer.loginUser(cpf, password);
+			
+			return connected;
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
 
-                Thread clientThread = new Thread(new ClienteHandler(clientSocket));
-                clientThread.start();
+	@Override
+	public void AdicionarCarro(TiposCarros newCar) throws RemoteException {
+		storServer.addCar(newCar);
+		System.out.println("Carro adicionado com sucesso.");
+	}
+	
+	@Override
+	public void EditarCarro(String renavam, TiposCarros editedCar) throws RemoteException {
+		storServer.editCar(renavam, editedCar);
+		System.out.println("Carro de renavam " + renavam + " editado com sucesso.");
+	}
 
-                try {
-                    Socket autenticacaoSocket = new Socket("localhost", 4097);
-                    PrintWriter outToAutenticacao = new PrintWriter(autenticacaoSocket.getOutputStream(), true);
-                    BufferedReader inFromAutenticacao = new BufferedReader(new InputStreamReader(autenticacaoSocket.getInputStream()));
+	@Override
+	public void RemoverCarro(String renavam) throws RemoteException {
+		storServer.deleteCar(renavam);
+		System.out.println("Carro de renavam " + renavam + " deletado com sucesso.");
+	}
+	
+	@Override
+	public void deleteCars(String name) throws RemoteException {
+		storServer.deleteCars(name);
+		System.out.println("Todos os carros " + name + " deletados com sucesso.");
+	}
+	
+	@Override
+	public List<TiposCarros> listCars() throws RemoteException {
+		System.out.println("Lista de carros enviada.");
+		return storServer.listCars();
+	}
 
-                    // Enviar solicitação de autenticação
-                    outToAutenticacao.println("Autenticar");
+	@Override
+	public List<TiposCarros> listCars(int category) throws RemoteException {
+		System.out.println("Lista de carros da categoria " + category + " enviada.");
+		return storServer.listCars(category);
+	}
+	
+	@Override
+	public TiposCarros searchCar(String renavam) throws RemoteException {
+		System.out.println("Carro encontrado com sucesso!");
+		return storServer.searchCar(renavam);
+	}
 
-                    // Receber resposta de autenticação
-                    String respostaAutenticacao = inFromAutenticacao.readLine();
-                    System.out.println("Resposta do servidor de autenticação: " + respostaAutenticacao);
-
-                    // Fechar a conexão com o ServidorAutenticacao
-                    autenticacaoSocket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } 
-    }
+	@Override
+	public List<TiposCarros> searchCars(String name) throws RemoteException {
+		System.out.println("Lista de carros encontrada com sucesso!");
+		return storServer.searchCars(name);
+	}
+	
+	@Override
+	public TiposCarros ComprarCarro(String renavam) throws RemoteException {
+		System.out.println("Carro de renavam " + renavam + " foi comprado.");
+		return storServer.buyCar(renavam);
+	}
+	
+	@Override
+	public int getAmount(int category) throws RemoteException {
+		return storServer.getAmount(category);
+	}
+	
 }
+

@@ -1,7 +1,13 @@
 package LojaDeCarros;
 
-import java.rmi.*;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 
 public interface AutenticacaoRemota extends Remote {
-    boolean autenticar(String usuario, String senha) throws RemoteException;
+
+	//void startServer() throws RemoteException;
+	Usuarios loginUser(String cpf, String password) throws RemoteException;
+	void registerUser(Usuarios newUser) throws RemoteException;
+	
 }
+
