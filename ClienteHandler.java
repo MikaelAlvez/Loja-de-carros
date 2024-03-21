@@ -10,21 +10,23 @@ import java.util.Scanner;
 
 public class ClienteHandler {
 	
-	private static boolean conexao = false;
-	private static Scanner scan;
 	private static GatewayRemoto gatewayRemoto;
+	private static boolean conexao = false;
+	
 	private static Usuarios usuario;
 	private static List<TiposCarros> Carro;
 	
+	private static Scanner scan;
+	
 	public static void main(String[] args) {
-		
-		scan = new Scanner(System.in);
+	    scan = new Scanner(System.in);
 		Carro = new ArrayList<TiposCarros>();
 		
 		try {
-			Registry authRegister = LocateRegistry.getRegistry(4096);
+			Registry authRegister = LocateRegistry.getRegistry(4098);
 			gatewayRemoto = (GatewayRemoto) authRegister.lookup("Gateway");
 			
+			System.out.println("---LOJA DE CARROS---\n");
 			usuario = login();
 					if(usuario != null) {
 						conexao = true;
@@ -32,30 +34,43 @@ public class ClienteHandler {
 				
 			while(conexao) {
 				if(usuario.funcionario()) {
-				System.out.println("1. Listar carros\n" +
-						"2. Consultar carros\n" +
-						"3. Realizar compra\n" +
-						"4. Quantidade de carros disponíveis\n" +
-						"5. Cadastrar carro\n" +
-						"6. Editar carro\n" +
-						"7. Remover carro\n" +
-						"8. Carros Vendidos");
+				System.out.println("Bem-vindo ao sistema de loja de carro\n" +
+						"\n1. Cadastrar Carro\n" +
+						"2. Remover carro\n" +
+						"3. Listar carros\n" +
+						"4. Consultar carros\n" +
+						"5. Editar carro\n" +
+						"6. Carros Vendidos" +
+						"7. Quantidade de carros disponíveis\n" +
+						"8. Realizar compra\n");
 				}else {
-					System.out.println("1. Listar carros\n" +
-							"2. Consultar carros\n" +
-							"3. Realizar compra\n" +
-							"4. Quantidade de carros disponíveis\n");
+					System.out.println("\n3. Listar carros\n" +
+							"4. Consultar carros\n" +
+							"7. Quantidade de carros disponíveis\n" +
+							"8. Realizar compra\n");
 					}
+				
+				scan = new Scanner(System.in);
 				System.out.print("Opção: ");
 				int opc = scan.nextInt();
 				scan.nextLine();
 				
 				switch(opc) {
 				case 1:
+					if(usuario.funcionario()) {
+						AcidionarCarro();
+					}
+					break;
+				case 2:
+					if(usuario.funcionario()) {
+						RemoverCarro();
+					}
+					break;
+				case 3:
 					List<TiposCarros> carrosRegistrados = new ArrayList<TiposCarros>();
 					
-					carrosRegistrados = gatewayRemoto.listCars();
-					System.out.println("\nListar por Categoria: "+
+					carrosRegistrados = gatewayRemoto.ListaDeCarros();
+					System.out.println("\nListar por Categoria:\n"+
 						"1. Categoria Economica\n" + 
 						"2. Categoria Intermediária\n" +
 						"3. Categoria Executiva");
@@ -64,65 +79,53 @@ public class ClienteHandler {
 					scan.nextLine();
 					
 					if(categoria >=1 && categoria<=3) {
-						carrosRegistrados = gatewayRemoto.listCars(categoria);
+						carrosRegistrados = gatewayRemoto.ListaPorCategoria(categoria);
 						for(TiposCarros carro : carrosRegistrados) {
 							System.out.println("\nNome: " + carro.getNome() +
-									"Categoria: " + carro.getTipoCategoria() +
-									"Ano de fabricação: " + carro.getAno() +
-									"Renavam: " + carro.getRenavam() +
-									"Preço: R$" + carro.getPreco());
+									"\nCategoria: " + carro.getTipoCategoria() +
+									"\nAno de fabricação: " + carro.getAno() +
+									"\nRenavam: " + carro.getRenavam() +
+									"\nPreço: R$" + carro.getPreco());
 						}
 					}else {
 						System.out.println("Opção inválida!");
 					}
 					break;
-					
-				case 2:
+				case 4:
 					System.out.println("Informe o número do Renavam");
 					String renavam = scan.nextLine();
-					scan.nextLine();
 		
-						TiposCarros consultarCarro = gatewayRemoto.searchCar(renavam);
+						TiposCarros consultarCarro = gatewayRemoto.ConsultarCarro(renavam);
 						if(consultarCarro != null) {
 							System.out.println("\nNome: " + consultarCarro.getNome() +
-								"Categoria: " + consultarCarro.getTipoCategoria() +
-								"Ano de fabricação: " + consultarCarro.getAno() +
-								"Renavam: " + consultarCarro.getRenavam() +
-								"Preço: R$" + consultarCarro.getPreco());
+								"\nCategoria: " + consultarCarro.getTipoCategoria() +
+								"\nAno de fabricação: " + consultarCarro.getAno() +
+								"\nRenavam: " + consultarCarro.getRenavam() +
+								"\nPreço: R$" + consultarCarro.getPreco());
 						} else {
 							System.out.println("Carro não encontrado.");
 						}
 					break;
-				case 3:
-					ComprarCarro();
-					break;
-				case 4:
-					int total = gatewayRemoto.getAmount(1) + gatewayRemoto.getAmount(2) + gatewayRemoto.getAmount(3);
-					System.out.println("Quantidade total de carros disponíveis: " + total);
-					break;
 				case 5:
-					if(usuario.funcionario()) {
-						AcidionarCarro();
-					}
-					break;
-				case 6:
 					if(usuario.funcionario()) {
 						EditarCarro();
 					}
 					break;
-				case 7:
-					if(usuario.funcionario()) {
-						RemoverCarro();
-					}
-					break;
-				case 8:
+				case 6:
 					for(TiposCarros vendidos : Carro) {
 						System.out.println("Nome: " + vendidos.getNome() +
-							"Categoria: " + vendidos.getTipoCategoria() +
-							"Ano de fabricação: " + vendidos.getAno() +
-							"Renavam: " + vendidos.getRenavam() +
-							"Preço: R$" + vendidos.getPreco());
+							"\nCategoria: " + vendidos.getTipoCategoria() +
+							"\nAno de fabricação: " + vendidos.getAno() +
+							"\nRenavam: " + vendidos.getRenavam() +
+							"\nPreço: R$" + vendidos.getPreco());
 					}
+					break;
+				case 7:
+					int total = gatewayRemoto.quantidadeCarros(1) + gatewayRemoto.quantidadeCarros(2) + gatewayRemoto.quantidadeCarros(3);
+					System.out.println("Quantidade total de carros disponíveis: " + total);
+					break;
+				case 8:
+					ComprarCarro();
 					break;
 				default:
 					System.out.println("Opção inválida!");
@@ -134,14 +137,14 @@ public class ClienteHandler {
 	}
 	
 	private static Usuarios login() throws RemoteException {
-		System.out.print("CPF: ");
-		String cpf = scan.nextLine();
+		System.out.print("Usuario: ");
+		String usuario = scan.nextLine();
 		System.out.print("Senha: ");
-		String password = scan.nextLine();
+		String senha = scan.nextLine();
 		
-		Usuarios connected = gatewayRemoto.login(cpf, password);
+		Usuarios conectar = gatewayRemoto.login(usuario, senha);
 		
-		return connected;
+		return conectar;
 		
 	}
 	
@@ -186,7 +189,7 @@ public class ClienteHandler {
 		
 		System.out.println("1. Nome\n" +
 				"2. Categoria\n" +
-				"3. Ano de fabricação" +
+				"3. Ano de fabricação\n" +
 				"4. Renavam\n" +
 				"5. Preco\n" +
 				"Selecione a opção para editar:");
@@ -240,28 +243,33 @@ public class ClienteHandler {
 	}
 	
 	private static void ComprarCarro() throws RemoteException {
-		System.out.print("Renavam do carro:");
-		String renavam = scan.nextLine();
-		TiposCarros comprar = gatewayRemoto.searchCar(renavam);
-		
-		System.out.println("Nome: " + comprar.getNome() +
-				"Categoria: " + comprar.getTipoCategoria() +
-				"Ano de fabricação: " + comprar.getAno() +
-				"Preço: R$" + comprar.getPreco());
-		System.out.print("Confirmar compra? (S/N)");
-		String confirmar = scan.nextLine();
-		
-		if(confirmar=="S" || confirmar=="s") {
-			TiposCarros confirmarCompra = gatewayRemoto.ComprarCarro(renavam);
-			if(confirmarCompra != null) {
-				System.out.println("Compra do(a) " +confirmarCompra.getRenavam() + " efetuada!");
-				Carro.add(confirmarCompra);
-			} else {
-				System.out.println("Carro não disponível! Verifique os outros disponíveis.");
-			}
-		}else {
-			System.out.println("Compra cancelada!");
-		}
+	    System.out.print("Renavam do carro:");
+	    String renavam = scan.nextLine();
+	    TiposCarros comprar = gatewayRemoto.ConsultarCarro(renavam);
+	    
+	    if (comprar != null) {
+	        System.out.println("Nome: " + comprar.getNome() +
+	                "\nCategoria: " + comprar.getTipoCategoria() +
+	                "\nAno de fabricação: " + comprar.getAno() +
+	                "\nPreço: R$" + comprar.getPreco());
+	        System.out.print("Confirmar compra? (S/N)");
+	        String confirmar = scan.nextLine();
+	        
+	        if (confirmar.equals("S") || confirmar.equals("s")) {
+	            TiposCarros confirmarCompra = gatewayRemoto.ComprarCarro(renavam);
+	            if (confirmarCompra != null) {
+	                System.out.println("Compra do(a) carro de renavam " + confirmarCompra.getRenavam() + " efetuada!");
+	                Carro.add(confirmarCompra);
+	            } else {
+	                System.out.println("Carro não disponível! Verifique os outros disponíveis.");
+	            }
+	        } else {
+	            System.out.println("Compra cancelada!");
+	        }
+	    } else {
+	        System.out.println("Carro não encontrado!");
+	    }
 	}
+
 	
 }

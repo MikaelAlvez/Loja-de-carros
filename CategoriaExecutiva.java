@@ -3,18 +3,18 @@ package LojaDeCarros;
 public class CategoriaExecutiva extends TiposCarros {
 
 	private static final long serialVersionUID = 1L;
-	private static int amount;
+	private static int quant;
 	
 	public CategoriaExecutiva(String carro, int categoria, String ano, String renavam, double preco) {
 		super(carro, categoria, ano, renavam, preco);
 	}
 	
-	public static int getAmount() {
-		return amount;
+	public static int getQuant() {
+		return quant;
 	}
 
-	public static void setAmount(int amount) {
-		CategoriaExecutiva.amount = amount;
+	public static void setQuant(int quant) {
+		CategoriaExecutiva.quant = quant;
 	}
 	
 }

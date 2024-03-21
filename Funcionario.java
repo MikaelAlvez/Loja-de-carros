@@ -4,26 +4,23 @@ public class Funcionario extends Usuarios {
 
 	private static final long serialVersionUID = 1L;
 
-	public Funcionario(String newCpf, String newPassword, String newName) {
-		super.cpf = newCpf;
-		super.password = newPassword;
-		super.name = newName;
-		super.funcionario = true;
+	public Funcionario(String cpf, String senha, String nome, String login) {
+        this.cpf = cpf;
+        this.senha = senha;
+        this.nome = nome;
+        this.login = login;
+        this.funcionario = true;
+    }
+	
+	public TiposCarros AdicionarCarro(TiposCarros Carro) {
+		return Carro;
 	}
 	
-	public TiposCarros addCar(TiposCarros newCar) {
-		return newCar;
+	public TiposCarros EditarCarro(TiposCarros Carro) {
+		return Carro;
 	}
 	
-	public TiposCarros editCar(TiposCarros car) {
-		return car;
-	}
-	
-	public boolean deleteCar(TiposCarros carToDelete) {
-		return false;
-	}
-	
-	public boolean deleteCar(long renavamToDelete) {
+	public boolean RemoverCarro(long Renavam) {
 		return false;
 	}
 }

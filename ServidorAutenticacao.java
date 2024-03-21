@@ -1,10 +1,6 @@
 package LojaDeCarros;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -15,40 +11,38 @@ import java.util.Map.Entry;
 
 public class ServidorAutenticacao implements AutenticacaoRemota {
 
-	private static String path = "Usuarios.txt";
-	private static HashMap<String, Usuarios> users;
-	private static ObjectOutputStream fileOutput;
-	private static ObjectInputStream fileInput;
+	private static HashMap<String, Usuarios> usuarios;
 
 	public ServidorAutenticacao() {
-		try { // tenta abrir
-			fileInput = new ObjectInputStream(new FileInputStream(path));
-		} catch (IOException e) { // se nao abrir pq nao existe/funciona
-			
-			try { // ele faz o output pra poder criar o arquivo certo e dps abre
-				fileOutput = new ObjectOutputStream(new FileOutputStream(path));
-				fileInput = new ObjectInputStream(new FileInputStream(path));
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-		}
-		
-		users = getFileUsers();
-
+	    usuarios = new HashMap<>();
+	    usuarios.put("joao", new UsuarioComum("João Silva", "joao", "senha123"));
+	    usuarios.put("maria", new UsuarioComum("Maria Santos", "maria", "123456"));
+	    usuarios.put("carlos", new UsuarioComum("Carlos Oliveira", "carlos", "senha1234"));
+	    
+	    usuarios.put("ana", new Funcionario("123456789", "senha123", "Ana Maria", "ana"));
+        usuarios.put("pedro", new Funcionario("987654321", "senha456", "Pedro Souza", "pedro"));
+        usuarios.put("funcionario", new Funcionario("456789123", "senha789", "Funcionário loja", "funcionario"));
+        
 	}
 
-	public static void main(String[] args) {
 
-		ServidorAutenticacao authServer = new ServidorAutenticacao();
+	public static void main(String[] args) throws UnknownHostException {
+
+		ServidorAutenticacao AutenticaUsuario = new ServidorAutenticacao();
 
 		try {
-			AutenticacaoRemota server = (AutenticacaoRemota) UnicastRemoteObject.exportObject(authServer, 0);
+			AutenticacaoRemota server = (AutenticacaoRemota) UnicastRemoteObject.exportObject(AutenticaUsuario, 0);
+			
+			LocateRegistry.createRegistry(4096);
+			Registry registro = LocateRegistry.getRegistry("127.0.0.1", 4096);
+			registro.bind("log", server);
 
-			LocateRegistry.createRegistry(4097);
-			Registry register = LocateRegistry.getRegistry("127.0.0.1", 4097);
-			register.bind("Authentication", server);
-
-			System.out.println("Servidor de Autenticação ligado.");
+			String hostname = java.net.InetAddress.getLocalHost().getHostName();
+			
+			System.out.println("Servidor de Autenticação iniciado!\n"+
+		    	"[Porta: 4096, IP: 127.0.0.1, Hostname: " + hostname + "]");
+			
+			System.out.println("\nAguardando conexões...\n");
 
 		} catch (RemoteException | AlreadyBoundException e) {
 			e.printStackTrace();
@@ -56,65 +50,18 @@ public class ServidorAutenticacao implements AutenticacaoRemota {
 
 	}
 	
-	private void attServer() {
-
-		try {
-			fileOutput = new ObjectOutputStream(new FileOutputStream(path));
-			
-			for (Entry<String, Usuarios> user : users.entrySet()) {
-				fileOutput.writeObject(user.getValue());
-			}
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-	}
-
 	@Override
-	public void registerUser(Usuarios newUser) {
-		users = getFileUsers(); // pega do arquivo e bota no mapa
-		users.put(newUser.getCpf(), newUser); // add no mapa
-		attServer(); // salva o mapa num arquivo
-		
-		System.out.println("Registrado com sucesso.");
-	}
+	public Usuarios login(String usuario, String senha) {
 
-	@Override
-	public Usuarios loginUser(String cpf, String password) {
-
-		for (Entry<String, Usuarios> user : users.entrySet()) {
-			if (cpf.equals(user.getKey()) && password.equals(user.getValue().getPassword())) {
-				System.out.println("Logado com sucesso! Bem-vindo, " + user.getValue().getName() + ".");
+		for (Entry<String, Usuarios> user : usuarios.entrySet()) {
+			if (usuario.equals(user.getKey()) && senha.equals(user.getValue().getSenha())) {
+				System.out.println("Logado com sucesso! Bem-vindo, " + user.getValue().getNome() + ".");
 
 				return user.getValue();
 			}
 		}
 
 		return null;
-	}
-
-	private static HashMap<String, Usuarios> getFileUsers() {
-		boolean eof = false;
-		
-		if(users == null) {
-			users = new HashMap<String, Usuarios>();
-		}
-
-		try {
-
-			while (!eof) {
-				Usuarios account = (Usuarios) fileInput.readObject();
-				users.put(account.getCpf(), account);
-			}
-
-		} catch (IOException e) {
-			eof = true;
- 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-
-		return users;
 	}
 
 }

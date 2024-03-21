@@ -1,10 +1,6 @@
 package LojaDeCarros;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -20,40 +16,37 @@ import java.util.Map.Entry;
 
 public class ServidorLojaDeCarros implements LojaDeCarrosRemota {
 
-	private String path = "Carros.txt";
-	private static HashMap<String, TiposCarros> cars;
-	private static ObjectOutputStream fileOutput;
-	private static ObjectInputStream fileInput;
-	private static int economicAmount = 0, intermediaryAmount = 0, executiveAmount = 0; 
+    private static HashMap<String, TiposCarros> carros = new HashMap<>();	
+	private static int economico = 0, intermediario = 0, executivo = 0; 
 	
 	public ServidorLojaDeCarros() {
-		try { // tenta abrir
-			fileInput = new ObjectInputStream(new FileInputStream(path));
-		} catch (IOException e) { // se nao abrir pq nao existe/funciona
-			
-			try { // ele faz o output pra poder criar o arquivo certo e dps abre
-				fileOutput = new ObjectOutputStream(new FileOutputStream(path));
-				fileInput = new ObjectInputStream(new FileInputStream(path));
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-		}
-		
-		cars = getFileCars();
+		carros.put("123457", new CategoriaEconomica("Gol", 1, "2022", "123457", 40000.0));
+		carros.put("123456", new CategoriaEconomica("Fiat Uno", 1, "2022", "123456", 25000.0));
+	    carros.put("789012", new CategoriaIntermediaria("Civic", 2, "2023", "789012", 80000.0));
+	    carros.put("234567", new CategoriaIntermediaria("Volkswagen Gol", 2, "2021", "234567", 35000.0));
+	    carros.put("345678", new CategoriaExecutiva("BMW", 3, "2021", "345678", 150000.0));
+	    carros.put("345679", new CategoriaExecutiva("Toyota Corolla", 3, "2023", "345679", 80000.0));
+	    
+	    servidor();
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws UnknownHostException {
 		
-		ServidorLojaDeCarros storServer = new ServidorLojaDeCarros();
+		ServidorLojaDeCarros BancoDeDados = new ServidorLojaDeCarros();
 
 		try {
-			LojaDeCarrosRemota server = (LojaDeCarrosRemota) UnicastRemoteObject.exportObject(storServer, 0);
+			LojaDeCarrosRemota ServidorLoja = (LojaDeCarrosRemota) UnicastRemoteObject.exportObject(BancoDeDados, 0);
 
-			LocateRegistry.createRegistry(5002);
-			Registry register = LocateRegistry.getRegistry("127.0.0.2", 4098);
-			register.bind("Storage", server);
+			LocateRegistry.createRegistry(4097);
+			Registry register = LocateRegistry.getRegistry("127.0.0.2", 4097);
+			register.bind("Storage", ServidorLoja);
 
-			System.out.println("Servidor de Armazenamento ligado.");
+			String hostname = java.net.InetAddress.getLocalHost().getHostName();
+			
+			System.out.println("Banco de dados iniciado..." +
+					"\n[Porta: 4097, Endereço IP: 127.0.0.2, HostName: " + hostname + "]\n");
+			
+			System.out.println("\nAguardando conexões...\n");
 
 		} catch (RemoteException | AlreadyBoundException e) {
 			e.printStackTrace();
@@ -62,238 +55,165 @@ public class ServidorLojaDeCarros implements LojaDeCarrosRemota {
 	}
 
 	@Override
-	public void addCar(TiposCarros newCar) {
-		cars = getFileCars(); // pega do arquivo e bota no mapa
-		cars.put(newCar.getRenavam(), newCar); // add no mapa
-		attServer(); // salva o mapa num arquivo
+	public void AdicionarCarro(TiposCarros carro) {
+		carros.put(carro.getRenavam(), carro);
+		servidor();
 		
 		System.out.println("Carro adicionado com sucesso.");
 	}
 
 	@Override
-	public void editCar(String renavam, TiposCarros editedCar) {
-		cars = getFileCars(); // att o mapa pra versao mais recente
-		TiposCarros editCar = searchCar(renavam);
+	public void EditarCarro(String renavam, TiposCarros carro) {
+		TiposCarros editCar = ConsultarCarro(renavam);
 		
-		if(editedCar.getNome() != null) {
-			editCar.setNome(editedCar.getNome());
+		if(carro.getNome() != null) {
+			editCar.setNome(carro.getNome());
 		}
-		if(editedCar.getCategoria() != 0) {
+		if(carro.getCategoria() != 0) {
 			switch(editCar.getCategoria()) {
 			case 1:
-				economicAmount--;
+				economico--;
 				break;
 			case 2:
-				intermediaryAmount--;
+				intermediario--;
 				break;
 			case 3:
-				executiveAmount--;
+				executivo--;
 				break;
 			}
-			switch(editedCar.getCategoria()) {
+			switch(carro.getCategoria()) {
 			case 1:
-				economicAmount++;
+				economico++;
 				break;
 			case 2:
-				intermediaryAmount++;
+				intermediario++;
 				break;
 			case 3:
-				executiveAmount++;
+				executivo++;
 				break;
 			}
-			editCar.setCategoria(editedCar.getCategoria());
+			editCar.setCategoria(carro.getCategoria());
 		}
-		if(editedCar.getAno() != null) {
-			editCar.setAno(editedCar.getAno());
+		if(carro.getAno() != null) {
+			editCar.setAno(carro.getAno());
 		}
-		if(editedCar.getPreco() != 0.0) {
-			editCar.setPreco(editedCar.getPreco());
+		if(carro.getPreco() != 0.0) {
+			editCar.setPreco(carro.getPreco());
 		}
 		
-		System.out.println("Carro de renavam " + renavam + " editado com sucesso.");
+		System.out.println("Carro de renavam " + renavam + " editado!");
 		
-		attServer(); // salva o mapa num arquivo
+		servidor();
 	}
 
 	@Override
-	public void deleteCar(String renavam) {
-		cars = getFileCars(); // att o mapa pra versao mais recente
-		TiposCarros deleteCar = searchCar(renavam);
+	public void RemoverCarro(String renavam) {
+		TiposCarros carro = ConsultarCarro(renavam);
 		
-		if(deleteCar != null) {
-			cars.remove(renavam, deleteCar);
-			System.out.println("Carro de renavam " + renavam + " deletado com sucesso.");
+		if(carro != null) {
+			carros.remove(renavam, carro);
+			System.out.println("Carro de renavam " + renavam + " removido!");
 		}
 		
-		attServer(); // salva o mapa num arquivo
-	}
-	
-	@Override
-	public void deleteCars(String name) {
-		cars = getFileCars(); // att o mapa pra versao mais recente
-		List<TiposCarros> deleteCars = searchCars(name);
-		
-		if(deleteCars != null) {
-			for(TiposCarros toDeleteCar : deleteCars) {
-				cars.remove(toDeleteCar.getRenavam(), toDeleteCar);
-			}
-			System.out.println("Todos os carros " + name + " deletados com sucesso.");
-		}
-		
-		attServer();
+		servidor();
 	}
 
 	@Override
-	public List<TiposCarros> listCars() {
-		cars = getFileCars();
-		List<TiposCarros> list = new ArrayList<TiposCarros>();
+	public List<TiposCarros> ListaDeCarros() {
+		List<TiposCarros> listaDeCarros = new ArrayList<TiposCarros>();
 		
-		for (Entry<String, TiposCarros> car : cars.entrySet()) {
-			list.add(car.getValue());
+		for (Entry<String, TiposCarros> carro : carros.entrySet()) {
+			listaDeCarros.add(carro.getValue());
 		}
 		
 		Comparator<TiposCarros> comparator = Comparator.comparing(TiposCarros::getNome);
-		Collections.sort(list, comparator);
+		Collections.sort(listaDeCarros, comparator);
 		
-		System.out.println("Lista de carros enviada.");
+		System.out.println("Lista de carros encaminhada!");
 		
-		return list;
+		return listaDeCarros;
 	}
 	
 	@Override
-	public List<TiposCarros> listCars(int category) {
-		cars = getFileCars();
-		List<TiposCarros> list = new ArrayList<TiposCarros>();
+	public List<TiposCarros> ListaPorCategoria(int categoria) {
+		List<TiposCarros> listaDeCarros = new ArrayList<TiposCarros>();
 		
-		for (Entry<String, TiposCarros> car : cars.entrySet()) {
-			if(car.getValue().getCategoria() == category) {
-				list.add(car.getValue());	
+		for (Entry<String, TiposCarros> carro : carros.entrySet()) {
+			if(carro.getValue().getCategoria() == categoria) {
+				listaDeCarros.add(carro.getValue());	
 			}
 		}
 		
-		Comparator<TiposCarros> comparator = Comparator.comparing(TiposCarros::getNome);
-		Collections.sort(list, comparator);
+		Comparator<TiposCarros> verifica = Comparator.comparing(TiposCarros::getNome);
+		Collections.sort(listaDeCarros, verifica);
 				
-		System.out.println("Lista de carros da categoria " + category + " enviada.");
+		System.out.println("Lista de carros " + categoria + " encaminhada!");
 		
-		return list;
+		return listaDeCarros;
 	}
 
 	@Override
-	public TiposCarros searchCar(String renavam) {
-		cars = getFileCars();
+	public TiposCarros ConsultarCarro(String renavam) {
 		
-		TiposCarros finded = null;
-		for (Entry<String, TiposCarros> car : cars.entrySet()) {
-			if (renavam.equals(car.getKey()) && renavam.equals(car.getValue().getRenavam())) {
-				System.out.println("Carro encontrado com sucesso! Nome: " + car.getValue().getNome() + ".");
-				finded = car.getValue();
+		TiposCarros localizado = null;
+		for (Entry<String, TiposCarros> carro : carros.entrySet()) {
+			if (renavam.equals(carro.getKey()) && renavam.equals(carro.getValue().getRenavam())) {
+				System.out.println("Carro" + carro.getValue().getNome() + " localizado!");
+				localizado = carro.getValue();
 				break;
 			}
-		}
-		
-		return finded;
-
+		}	
+		return localizado;
 	}
 
 	@Override
-	public List<TiposCarros> searchCars(String name) {
-		cars = getFileCars();
+	public TiposCarros ComprarCarro(String renavam) {
 		
-		List<TiposCarros> findeds = new ArrayList<TiposCarros>();
-		for (Entry<String, TiposCarros> car : cars.entrySet()) {
-			if (name.equalsIgnoreCase(car.getValue().getNome())) {
-				System.out.println("Renavam: " + car.getValue().getRenavam() + ".");
-				findeds.add(car.getValue());
-			}
-		}
+		TiposCarros compra = ConsultarCarro(renavam);
+		System.out.println("Carro de renavam " + renavam + " comprado!");
+		RemoverCarro(renavam);
 		
-		return findeds;
-	}
-
-	@Override
-	public TiposCarros buyCar(String renavam) {
-		
-		TiposCarros purchased = searchCar(renavam);
-		System.out.println("Carro de renavam " + renavam + " foi comprado.");
-		deleteCar(renavam);
-		
-		return purchased;
+		return compra;
 	}
 	
-	private static HashMap<String, TiposCarros> getFileCars() {
-		boolean eof = false;
-		
-		if(cars == null) {
-			cars = new HashMap<String, TiposCarros>();
-		}
-		
-		try {
-			while (!eof) {
-				TiposCarros registredCar = (TiposCarros) fileInput.readObject();
-				cars.put(registredCar.getRenavam(), registredCar);
-			}
-
-		} catch (IOException e) {
-			eof = true;
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-
-		return cars;
-	}
 	
-	private void attServer() {
-
-		try {
-			fileOutput = new ObjectOutputStream(new FileOutputStream(path));
-			
-			economicAmount = 0;
-			intermediaryAmount = 0;
-			executiveAmount = 0;
-			for (Entry<String, TiposCarros> TiposCarros : cars.entrySet()) {
-				fileOutput.writeObject(TiposCarros.getValue());
-				
-				switch(TiposCarros.getValue().getCategoria()) {
-				case 1:
-					economicAmount++;
-					break;
-				case 2:
-					intermediaryAmount++;
-					break;
-				case 3:
-					executiveAmount++;
-					break;
-				default:
-				}
-			}
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
+	private void servidor() {
+		for (TiposCarros carro : carros.values()) {
+            switch (carro.getCategoria()) {
+                case 1:
+                    economico++;
+                    break;
+                case 2:
+                    intermediario++;
+                    break;
+                case 3:
+                    executivo++;
+                    break;
+                default:
+                    break;
+            }
+        }
 	}
 
 	@Override
-	public int getAmount(int category) throws RemoteException {
-		cars = getFileCars();
-		attServer();
+	public int quantidade(int categoria) throws RemoteException {
+		servidor();
 		
-		switch(category) {
+		switch(categoria) {
 		case 1:
-			CategoriaEconomica.setAmount(economicAmount);
-			return economicAmount;
+			CategoriaEconomica.setQuant(economico);
+			return economico;
 		case 2:
-			CategoriaIntermediaria.setAmount(intermediaryAmount);
-			return intermediaryAmount;
+			CategoriaIntermediaria.setQuant(intermediario);
+			return intermediario;
 		case 3:
-			CategoriaExecutiva.setAmount(executiveAmount);
-			return executiveAmount;
+			CategoriaExecutiva.setQuant(executivo);
+			return executivo;
 		default:
-			CategoriaEconomica.setAmount(economicAmount);
-			CategoriaIntermediaria.setAmount(intermediaryAmount);
-			CategoriaExecutiva.setAmount(executiveAmount);
-			return economicAmount + intermediaryAmount + executiveAmount;	
+			CategoriaEconomica.setQuant(economico);
+			CategoriaIntermediaria.setQuant(intermediario);
+			CategoriaExecutiva.setQuant(executivo);
+			return economico + intermediario + executivo;	
 		}
 	}
 	

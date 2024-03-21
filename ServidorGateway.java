@@ -1,5 +1,6 @@
 package LojaDeCarros;
 
+import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -10,117 +11,100 @@ import java.util.List;
 
 public class ServidorGateway implements GatewayRemoto {
 
-	static String authenticationHostName = "Authentication";
+	static String chaveLog = "log";
 	static String storageHostName = "Storage";
-	static AutenticacaoRemota authServer;
-	static LojaDeCarrosRemota storServer;
+	static AutenticacaoRemota Autenticar;
+	static LojaDeCarrosRemota Loja;
 	@SuppressWarnings("exports")
-	public static Registry register;
+	public static Registry registro;
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws UnknownHostException {
 		
 		ServidorGateway gateway = new ServidorGateway();
 		
 		try {
-			Registry authRegister = LocateRegistry.getRegistry("127.0.0.1", 4097);
-			authServer = (AutenticacaoRemota) authRegister.lookup(authenticationHostName);
+			Registry autenticar = LocateRegistry.getRegistry("127.0.0.1", 4096);
+			Autenticar = (AutenticacaoRemota) autenticar.lookup(chaveLog);
 			
-			Registry stgRegister = LocateRegistry.getRegistry("127.0.0.2", 4098);
-			storServer = (LojaDeCarrosRemota) stgRegister.lookup(storageHostName);
+			Registry loja = LocateRegistry.getRegistry("127.0.0.2", 4097);
+			Loja = (LojaDeCarrosRemota) loja.lookup(storageHostName);
 			
-			GatewayRemoto protocol = (GatewayRemoto) UnicastRemoteObject.exportObject(gateway, 0);
+			GatewayRemoto ServidorGateway = (GatewayRemoto) UnicastRemoteObject.exportObject(gateway, 0);
 			
-			LocateRegistry.createRegistry(4099);
-			register = LocateRegistry.getRegistry(4099);
-			register.bind("Gateway", protocol);
+			LocateRegistry.createRegistry(4098);
+			registro = LocateRegistry.getRegistry(4098);
+			registro.bind("Gateway", ServidorGateway);
 			
-			System.out.println("Gateway ligado...");
+			String hostname = java.net.InetAddress.getLocalHost().getHostName();
+			
+			System.out.println("Servidor Gateway iniciado..." +
+					"\n[Porta: 4098, IP: 127.0.0.1, Hostname: " + hostname + "]");
+			
+			System.out.println("\nAguardando conexões...\n");
 			
 		} catch (RemoteException | AlreadyBoundException | NotBoundException e) {
 			e.printStackTrace();
 		}
 		
 	}
-
-	@Override
-	public void register(Usuarios newUser) {
-		try {
-			authServer.registerUser(newUser);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
-	}
 	
 	@Override
-	public Usuarios login(String cpf, String password) {
+	public Usuarios login(String usuario, String senha) {
 		try {
-			Usuarios connected = authServer.loginUser(cpf, password);
+			Usuarios conectado = Autenticar.login(usuario, senha);
 			
-			return connected;
+			return conectado;
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
 	}
 
 	@Override
-	public void AdicionarCarro(TiposCarros newCar) throws RemoteException {
-		storServer.addCar(newCar);
-		System.out.println("Carro adicionado com sucesso.");
+	public void AdicionarCarro(TiposCarros Carro) throws RemoteException {
+		Loja.AdicionarCarro(Carro);
+		System.out.println("Carro adicionado!");
 	}
 	
 	@Override
-	public void EditarCarro(String renavam, TiposCarros editedCar) throws RemoteException {
-		storServer.editCar(renavam, editedCar);
-		System.out.println("Carro de renavam " + renavam + " editado com sucesso.");
+	public void EditarCarro(String renavam, TiposCarros EditarCarro) throws RemoteException {
+		Loja.EditarCarro(renavam, EditarCarro);
+		System.out.println("Carro de renavam " + renavam + " editado!");
 	}
 
 	@Override
 	public void RemoverCarro(String renavam) throws RemoteException {
-		storServer.deleteCar(renavam);
-		System.out.println("Carro de renavam " + renavam + " deletado com sucesso.");
+		Loja.RemoverCarro(renavam);
+		System.out.println("Carro de renavam " + renavam + " removido!");
 	}
 	
 	@Override
-	public void deleteCars(String name) throws RemoteException {
-		storServer.deleteCars(name);
-		System.out.println("Todos os carros " + name + " deletados com sucesso.");
-	}
-	
-	@Override
-	public List<TiposCarros> listCars() throws RemoteException {
-		System.out.println("Lista de carros enviada.");
-		return storServer.listCars();
+	public List<TiposCarros> ListaDeCarros() throws RemoteException {
+		System.out.println("Lista de carros encaminhada.");
+		return Loja.ListaDeCarros();
 	}
 
 	@Override
-	public List<TiposCarros> listCars(int category) throws RemoteException {
-		System.out.println("Lista de carros da categoria " + category + " enviada.");
-		return storServer.listCars(category);
+	public List<TiposCarros> ListaPorCategoria(int categoria) throws RemoteException {
+		System.out.println("Lista de carros da categoria " + categoria + " encaminhada.");
+		return Loja.ListaPorCategoria(categoria);
 	}
 	
 	@Override
-	public TiposCarros searchCar(String renavam) throws RemoteException {
-		System.out.println("Carro encontrado com sucesso!");
-		return storServer.searchCar(renavam);
-	}
-
-	@Override
-	public List<TiposCarros> searchCars(String name) throws RemoteException {
-		System.out.println("Lista de carros encontrada com sucesso!");
-		return storServer.searchCars(name);
+	public TiposCarros ConsultarCarro(String renavam) throws RemoteException {
+		System.out.println("Carro encontrado!");
+		return Loja.ConsultarCarro(renavam);
 	}
 	
 	@Override
 	public TiposCarros ComprarCarro(String renavam) throws RemoteException {
-		System.out.println("Carro de renavam " + renavam + " foi comprado.");
-		return storServer.buyCar(renavam);
+		System.out.println("Carro de renavam " + renavam + " comprado!");
+		return Loja.ComprarCarro(renavam);
 	}
 	
 	@Override
-	public int getAmount(int category) throws RemoteException {
-		return storServer.getAmount(category);
+	public int quantidadeCarros(int categoria) throws RemoteException {
+		return Loja.quantidade(categoria);
 	}
 	
 }

@@ -5,10 +5,11 @@ import java.io.Serializable;
 public class TiposCarros implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-	private String renavam;
+	
 	private String nome;
 	private int categoria;
 	private String ano;
+	private String renavam;
 	private double preco;
 	
 	public TiposCarros(String nomeCarro, int categoria, String ano, String renavam, double preco) {
@@ -52,8 +53,8 @@ public class TiposCarros implements Serializable {
 	public String getAno() {
 		return ano;
 	}
-	public void setAno(String manufactureYear) {
-		this.ano = manufactureYear;
+	public void setAno(String ano) {
+		this.ano = ano;
 	}
 	public double getPreco() {
 		return preco;
