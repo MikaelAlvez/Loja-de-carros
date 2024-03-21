@@ -31,16 +31,14 @@ public class ClienteHandler {
 					if(usuario != null) {
 						conexao = true;
 					}
-				
 			while(conexao) {
 				if(usuario.funcionario()) {
-				System.out.println("Bem-vindo ao sistema de loja de carro\n" +
-						"\n1. Cadastrar Carro\n" +
+				System.out.println("\n1. Cadastrar Carro\n" +
 						"2. Remover carro\n" +
 						"3. Listar carros\n" +
 						"4. Consultar carros\n" +
 						"5. Editar carro\n" +
-						"6. Carros Vendidos" +
+						"6. Carros Vendidos\n" +
 						"7. Quantidade de carros disponíveis\n" +
 						"8. Realizar compra\n");
 				}else {
@@ -92,7 +90,7 @@ public class ClienteHandler {
 					}
 					break;
 				case 4:
-					System.out.println("Informe o número do Renavam");
+					System.out.println("Informe o Renavam: ");
 					String renavam = scan.nextLine();
 		
 						TiposCarros consultarCarro = gatewayRemoto.ConsultarCarro(renavam);
@@ -159,7 +157,7 @@ public class ClienteHandler {
 		int categoria = scan.nextInt();
 		scan.nextLine();
 		
-		if(categoria>=1 && categoria>=3) {
+		if(categoria>=1 && categoria<=3) {
 			System.out.print("\nAno de fabricação: ");
 			String ano = scan.nextLine();
 			System.out.print("Renavam: ");
@@ -177,9 +175,9 @@ public class ClienteHandler {
 			if(categoria==3) {
 				gatewayRemoto.AdicionarCarro(new CategoriaExecutiva(nomeCarro, categoria, ano, renavam, preco));
 			}
-			System.out.println("Carro cadastrado!");
+			System.out.println("\nCarro cadastrado!\n");
 		}else {
-			System.out.println("Opção inválida!");
+			System.out.println("\nOpção inválida!\n");
 		}
 	}
 	
@@ -226,7 +224,7 @@ public class ClienteHandler {
 			novoPreco = scan.nextDouble();
 			scan.nextLine();
 		}
-		if(opc!=1 || opc!=2 || opc!=3) {
+		if(opc!=1 && opc!=2 && opc!=3 && opc!=4 && opc!=5) {
 			System.out.println("Opção inválida!");
 		}
 		
@@ -239,7 +237,7 @@ public class ClienteHandler {
 			String renavamExcluido = scan.nextLine();
 			
 			gatewayRemoto.RemoverCarro(renavamExcluido);
-			System.out.println(renavamExcluido + " removido!");
+			System.out.println("\nCarro de renavam " + renavamExcluido + " removido!");
 	}
 	
 	private static void ComprarCarro() throws RemoteException {
