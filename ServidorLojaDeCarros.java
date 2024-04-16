@@ -2,6 +2,7 @@ package LojaDeCarros;
 
 import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -15,20 +16,12 @@ import java.util.Map.Entry;
 
 
 public class ServidorLojaDeCarros implements LojaDeCarrosRemota {
+	
+	static String storageHostName = "data";
+	static BancoDeDadosRemoto Banco;
 
     private static HashMap<String, TiposCarros> carros = new HashMap<>();	
 	private static int economico = 0, intermediario = 0, executivo = 0; 
-	
-	public ServidorLojaDeCarros() {
-		carros.put("123457", new CategoriaEconomica("Gol", 1, "2022", "123457", 40000.0));
-		carros.put("123456", new CategoriaEconomica("Fiat Uno", 1, "2022", "123456", 25000.0));
-	    carros.put("789012", new CategoriaIntermediaria("Civic", 2, "2023", "789012", 80000.0));
-	    carros.put("234567", new CategoriaIntermediaria("Volkswagen Gol", 2, "2021", "234567", 35000.0));
-	    carros.put("345678", new CategoriaExecutiva("BMW", 3, "2021", "345678", 150000.0));
-	    carros.put("345679", new CategoriaExecutiva("Toyota Corolla", 3, "2023", "345679", 80000.0));
-	    
-	    servidor();
-	}
 	
 	public static void main(String[] args) throws UnknownHostException {
 		
@@ -43,12 +36,17 @@ public class ServidorLojaDeCarros implements LojaDeCarrosRemota {
 
 			String hostname = java.net.InetAddress.getLocalHost().getHostName();
 			
-			System.out.println("Banco de dados iniciado..." +
+			System.out.println("Servidor loja de carro iniciado..." +
 					"\n[Porta: 4097, Endereço IP: 127.0.0.2, HostName: " + hostname + "]\n");
 			
 			System.out.println("\nAguardando conexões...\n");
-
-		} catch (RemoteException | AlreadyBoundException e) {
+			
+			Registry banco = LocateRegistry.getRegistry("127.0.0.3", 4099);
+			Banco = (BancoDeDadosRemoto) banco.lookup(storageHostName);
+			
+			System.out.println("Banco de dados conectado.");
+			
+		} catch (RemoteException | AlreadyBoundException | NotBoundException e) {
 			e.printStackTrace();
 		}
 		
@@ -56,126 +54,157 @@ public class ServidorLojaDeCarros implements LojaDeCarrosRemota {
 
 	@Override
 	public void AdicionarCarro(TiposCarros carro) {
-		carros.put(carro.getRenavam(), carro);
-		servidor();
-		
-		System.out.println("Carro adicionado com sucesso.");
+	    try {
+	        Banco.AdicionarCarro(carro);
+	        System.out.println("Carro adicionado com sucesso.");
+	    } catch (RemoteException e) {
+	        e.printStackTrace();
+	    }
 	}
+
 
 	@Override
 	public void EditarCarro(String renavam, TiposCarros carro) {
-		TiposCarros editCar = ConsultarCarro(renavam);
-		
-		if(carro.getNome() != null) {
-			editCar.setNome(carro.getNome());
-		}
-		if(carro.getCategoria() != 0) {
-			switch(editCar.getCategoria()) {
-			case 1:
-				economico--;
-				break;
-			case 2:
-				intermediario--;
-				break;
-			case 3:
-				executivo--;
-				break;
-			}
-			switch(carro.getCategoria()) {
-			case 1:
-				economico++;
-				break;
-			case 2:
-				intermediario++;
-				break;
-			case 3:
-				executivo++;
-				break;
-			}
-			editCar.setCategoria(carro.getCategoria());
-		}
-		if(carro.getAno() != null) {
-			editCar.setAno(carro.getAno());
-		}
-		if(carro.getPreco() != 0.0) {
-			editCar.setPreco(carro.getPreco());
-		}
-		
-		System.out.println("Carro de renavam " + renavam + " editado!");
-		
-		servidor();
+	    try {
+	        TiposCarros editCar = Banco.ConsultarCarro(renavam);
+
+	        if (carro.getNome() != null) {
+	            editCar.setNome(carro.getNome());
+	        }
+	        if (carro.getCategoria() != 0) {
+	            switch (editCar.getCategoria()) {
+	                case 1:
+	                    economico--;
+	                    break;
+	                case 2:
+	                    intermediario--;
+	                    break;
+	                case 3:
+	                    executivo--;
+	                    break;
+	            }
+	            switch (carro.getCategoria()) {
+	                case 1:
+	                    economico++;
+	                    break;
+	                case 2:
+	                    intermediario++;
+	                    break;
+	                case 3:
+	                    executivo++;
+	                    break;
+	            }
+	            editCar.setCategoria(carro.getCategoria());
+	        }
+	        if (carro.getAno() != null) {
+	            editCar.setAno(carro.getAno());
+	        }
+	        if (carro.getPreco() != 0.0) {
+	            editCar.setPreco(carro.getPreco());
+	        }
+
+	        Banco.EditarCarro(renavam, editCar);
+
+	        System.out.println("Carro de renavam " + renavam + " editado!");
+
+	        servidor();
+	    } catch (RemoteException e) {
+	        e.printStackTrace();
+	    }
 	}
+
 
 	@Override
 	public void RemoverCarro(String renavam) {
-		TiposCarros carro = ConsultarCarro(renavam);
-		
-		if(carro != null) {
-			carros.remove(renavam, carro);
-			System.out.println("Carro de renavam " + renavam + " removido!");
-		}
-		
-		servidor();
+	    try {
+	        TiposCarros carro = Banco.ConsultarCarro(renavam);
+
+	        if (carro != null) {
+	            Banco.RemoverCarro(renavam);
+	            System.out.println("Carro de renavam " + renavam + " removido!");
+	        }
+
+	        servidor();
+	    } catch (RemoteException e) {
+	        e.printStackTrace();
+	    }
 	}
+
 
 	@Override
 	public List<TiposCarros> ListaDeCarros() {
-		List<TiposCarros> listaDeCarros = new ArrayList<TiposCarros>();
-		
-		for (Entry<String, TiposCarros> carro : carros.entrySet()) {
-			listaDeCarros.add(carro.getValue());
-		}
-		
-		Comparator<TiposCarros> comparator = Comparator.comparing(TiposCarros::getNome);
-		Collections.sort(listaDeCarros, comparator);
-		
-		System.out.println("Lista de carros encaminhada!");
-		
-		return listaDeCarros;
+	    try {
+	        List<TiposCarros> listaDeCarros = Banco.ListaDeCarros();
+	        
+	        Comparator<TiposCarros> comparator = Comparator.comparing(TiposCarros::getNome);
+	        listaDeCarros.sort(comparator);
+	        
+	        System.out.println("Lista de carros encaminhada!");
+	        
+	        return listaDeCarros;
+	    } catch (RemoteException e) {
+	        e.printStackTrace();
+	        return new ArrayList<>();
+	    }
 	}
+
 	
 	@Override
 	public List<TiposCarros> ListaPorCategoria(int categoria) {
-		List<TiposCarros> listaDeCarros = new ArrayList<TiposCarros>();
-		
-		for (Entry<String, TiposCarros> carro : carros.entrySet()) {
-			if(carro.getValue().getCategoria() == categoria) {
-				listaDeCarros.add(carro.getValue());	
-			}
-		}
-		
-		Comparator<TiposCarros> verifica = Comparator.comparing(TiposCarros::getNome);
-		Collections.sort(listaDeCarros, verifica);
-				
-		System.out.println("Lista de carros " + categoria + " encaminhada!");
-		
-		return listaDeCarros;
+	    try {
+	        List<TiposCarros> listaDeCarros = Banco.ListaPorCategoria(categoria);
+	        
+	        Comparator<TiposCarros> comparator = Comparator.comparing(TiposCarros::getNome);
+	        listaDeCarros.sort(comparator);
+	        
+	        System.out.println("Lista de carros " + categoria + " encaminhada!");
+	        
+	        return listaDeCarros;
+	    } catch (RemoteException e) {
+	        e.printStackTrace();
+	        return new ArrayList<>();
+	    }
 	}
+
 
 	@Override
 	public TiposCarros ConsultarCarro(String renavam) {
-		
-		TiposCarros localizado = null;
-		for (Entry<String, TiposCarros> carro : carros.entrySet()) {
-			if (renavam.equals(carro.getKey()) && renavam.equals(carro.getValue().getRenavam())) {
-				System.out.println("Carro" + carro.getValue().getNome() + " localizado!");
-				localizado = carro.getValue();
-				break;
-			}
-		}	
-		return localizado;
+	    try {
+	        TiposCarros localizado = Banco.ConsultarCarro(renavam);
+	        
+	        if (localizado != null) {
+	            System.out.println("Carro " + localizado.getNome() + " localizado!");
+	        } else {
+	            System.out.println("Carro com renavam " + renavam + " não encontrado!");
+	        }
+	        
+	        return localizado;
+	    } catch (RemoteException e) {
+	        e.printStackTrace();
+	        return null; 
+	    }
 	}
+
 
 	@Override
 	public TiposCarros ComprarCarro(String renavam) {
-		
-		TiposCarros compra = ConsultarCarro(renavam);
-		System.out.println("Carro de renavam " + renavam + " comprado!");
-		RemoverCarro(renavam);
-		
-		return compra;
+	    try {
+	        TiposCarros compra = Banco.ConsultarCarro(renavam);
+	        
+	        if (compra != null) {
+	            System.out.println("Carro de renavam " + renavam + " comprado!");
+	            
+	            Banco.RemoverCarro(renavam);
+	        } else {
+	            System.out.println("Carro com renavam " + renavam + " não encontrado para compra!");
+	        }
+	        
+	        return compra;
+	    } catch (RemoteException e) {
+	        e.printStackTrace();
+	        return null;
+	    }
 	}
-	
 	
 	private void servidor() {
 		for (TiposCarros carro : carros.values()) {
@@ -197,24 +226,15 @@ public class ServidorLojaDeCarros implements LojaDeCarrosRemota {
 
 	@Override
 	public int quantidade(int categoria) throws RemoteException {
-		servidor();
-		
-		switch(categoria) {
-		case 1:
-			CategoriaEconomica.setQuant(economico);
-			return economico;
-		case 2:
-			CategoriaIntermediaria.setQuant(intermediario);
-			return intermediario;
-		case 3:
-			CategoriaExecutiva.setQuant(executivo);
-			return executivo;
-		default:
-			CategoriaEconomica.setQuant(economico);
-			CategoriaIntermediaria.setQuant(intermediario);
-			CategoriaExecutiva.setQuant(executivo);
-			return economico + intermediario + executivo;	
-		}
+	    try {
+	        int quantidadeCategoria = Banco.quantidade(categoria);
+
+	        return quantidadeCategoria;
+	    } catch (RemoteException e) {
+	        e.printStackTrace();
+	        throw e;
+	    }
 	}
+
 	
 }
