@@ -12,7 +12,6 @@ import java.util.List;
 public class ServidorGateway implements GatewayRemoto {
 
 	static String chaveLog = "log";
-	static String chaveLoja[] = {"lojalider", "loja2", "loja3"};
 	static AutenticacaoRemota Autenticar;
 	static LojaDeCarrosRemota Loja;
 	@SuppressWarnings("exports")
@@ -25,18 +24,6 @@ public class ServidorGateway implements GatewayRemoto {
 		try {
 			Registry autenticar = LocateRegistry.getRegistry("127.0.0.1", 4096);
 			Autenticar = (AutenticacaoRemota) autenticar.lookup(chaveLog);
-			
-			// Replica 1
-			Registry replicaLider = LocateRegistry.getRegistry("127.0.0.2", 4097);
-			Loja = (LojaDeCarrosRemota) replicaLider.lookup(chaveLoja[0]);
-			
-			// Replica 2
-			replicaLider = LocateRegistry.getRegistry("127.0.0.2", 5000);
-			Loja = (LojaDeCarrosRemota) replicaLider.lookup(chaveLoja[1]);
-			
-			// Replica 3
-			replicaLider = LocateRegistry.getRegistry("127.0.0.2", 5001);
-			Loja = (LojaDeCarrosRemota) replicaLider.lookup(chaveLoja[2]);
 			
 			GatewayRemoto ServidorGateway = (GatewayRemoto) UnicastRemoteObject.exportObject(gateway, 0);
 			

@@ -13,97 +13,97 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-public class ServidorBancoDeDados implements BancoDeDadosRemoto{
-	
-	private static HashMap<String, TiposCarros> carros = new HashMap<>();	
-	private static int economico = 0, intermediario = 0, executivo = 0; 
-	
-	public ServidorBancoDeDados() {
-		carros.put("123457", new CategoriaEconomica("Gol", 1, "2022", "123457", 40000.0));
-		carros.put("123456", new CategoriaEconomica("Fiat Uno", 1, "2022", "123456", 25000.0));
-	    carros.put("789012", new CategoriaIntermediaria("Civic", 2, "2023", "789012", 80000.0));
-	    carros.put("234567", new CategoriaIntermediaria("Volkswagen Gol", 2, "2021", "234567", 35000.0));
-	    carros.put("345678", new CategoriaExecutiva("BMW", 3, "2021", "345678", 150000.0));
-	    carros.put("345679", new CategoriaExecutiva("Toyota Corolla", 3, "2023", "345679", 80000.0));
-	    
-	    servidor();
-	}
-	
-	public static void main(String[] args) throws UnknownHostException {
-		
-		ServidorBancoDeDados bancoDeDados = new ServidorBancoDeDados();
+public class ServidorBancoDeDados implements BancoDeDadosRemoto {
+    
+    private static final String LIDER = "datalider";
+    private static final String[] CHAVE_REPLICAS = {"data2", "data3"};
 
-		try {
-		    BancoDeDadosRemoto banco = (BancoDeDadosRemoto) UnicastRemoteObject.exportObject(bancoDeDados, 0);
-		    
-		    //Replica 1 banco de dados
-		    LocateRegistry.createRegistry(4099);
-		    Registry register = LocateRegistry.getRegistry("127.0.0.3", 4099);
-		    register.bind("datalider", banco);
-		    
-		    //Replica 2 banco de dados
-		    Registry register2 = LocateRegistry.getRegistry("127.0.0.3", 5002);
-		    register2.bind("datalider", banco);
-		    
-		    //Replica 3 banco de dados
-		    register2 = LocateRegistry.getRegistry("127.0.0.3", 5003);
-		    register2.bind("datalider", banco);
+    private HashMap<String, TiposCarros> carros = new HashMap<>();
+    private int economico = 0, intermediario = 0, executivo = 0;
 
-		    String hostname = java.net.InetAddress.getLocalHost().getHostName();
+    public ServidorBancoDeDados() {
+        carros.put("123457", new CategoriaEconomica("Gol", 1, "2022", "123457", 40000.0));
+        carros.put("123456", new CategoriaEconomica("Fiat Uno", 1, "2022", "123456", 25000.0));
+        carros.put("789012", new CategoriaIntermediaria("Civic", 2, "2023", "789012", 80000.0));
+        carros.put("234567", new CategoriaIntermediaria("Volkswagen Gol", 2, "2021", "234567", 35000.0));
+        carros.put("345678", new CategoriaExecutiva("BMW", 3, "2021", "345678", 150000.0));
+        carros.put("345679", new CategoriaExecutiva("Toyota Corolla", 3, "2023", "345679", 80000.0));
 
-		    System.out.println("Banco de dados iniciado..." +
-		            "\n[Porta: 4099, Endereço IP: 127.0.0.3, HostName: " + hostname + "]\n");
+        servidor();
+    }
 
-		    System.out.println("\nAguardando conexões...\n");
+    public static void main(String[] args) throws UnknownHostException {
+        try {
+            // Réplica Líder
+            ServidorBancoDeDados servidorLider = new ServidorBancoDeDados();
+            BancoDeDadosRemoto bancoLider = (BancoDeDadosRemoto) UnicastRemoteObject.exportObject(servidorLider, 0);
+            Registry registryLider = LocateRegistry.createRegistry(4099);
+            registryLider.bind(LIDER, bancoLider);
 
-		} catch (RemoteException | AlreadyBoundException e) {
-		    e.printStackTrace();
-		}
-	}
-	
-	@Override
-	public synchronized void EditarCarro(String renavam, TiposCarros carro) {
-		TiposCarros editCar = ConsultarCarro(renavam);
-		
-		if(carro.getNome() != null) {
-			editCar.setNome(carro.getNome());
-		}
-		if(carro.getCategoria() != 0) {
-			switch(editCar.getCategoria()) {
-			case 1:
-				economico--;
-				break;
-			case 2:
-				intermediario--;
-				break;
-			case 3:
-				executivo--;
-				break;
-			}
-			switch(carro.getCategoria()) {
-			case 1:
-				economico++;
-				break;
-			case 2:
-				intermediario++;
-				break;
-			case 3:
-				executivo++;
-				break;
-			}
-			editCar.setCategoria(carro.getCategoria());
-		}
-		if(carro.getAno() != null) {
-			editCar.setAno(carro.getAno());
-		}
-		if(carro.getPreco() != 0.0) {
-			editCar.setPreco(carro.getPreco());
-		}
-		
-		System.out.println("Carro de renavam " + renavam + " editado!");
-		
-		servidor();
-	}
+            // Réplicas
+            for (int i = 0; i < CHAVE_REPLICAS.length; i++) {
+                ServidorBancoDeDados replica = new ServidorBancoDeDados();
+                BancoDeDadosRemoto bancoReplica = (BancoDeDadosRemoto) UnicastRemoteObject.exportObject(replica, 0);
+                Registry registryReplica = LocateRegistry.createRegistry(5002 + i);
+                registryReplica.bind(CHAVE_REPLICAS[i], bancoReplica);
+            }
+
+            String hostname = java.net.InetAddress.getLocalHost().getHostName();
+            System.out.println("Servidores do banco de dados iniciados...");
+            System.out.println("[Líder: Porta 4099, Réplicas: Portas 5002, 5003]");
+            System.out.println("Endereço IP: 127.0.0.3, HostName: " + hostname + "\n");
+            System.out.println("Aguardando conexões...\n");
+        } catch (RemoteException | AlreadyBoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    @Override
+    public void EditarCarro(String renavam, TiposCarros carro) {
+        synchronized (this) {
+            TiposCarros editCar = ConsultarCarro(renavam);
+
+            if (carro.getNome() != null) {
+                editCar.setNome(carro.getNome());
+            }
+            if (carro.getCategoria() != 0) {
+                switch (editCar.getCategoria()) {
+                    case 1:
+                        economico--;
+                        break;
+                    case 2:
+                        intermediario--;
+                        break;
+                    case 3:
+                        executivo--;
+                        break;
+                }
+                switch (carro.getCategoria()) {
+                    case 1:
+                        economico++;
+                        break;
+                    case 2:
+                        intermediario++;
+                        break;
+                    case 3:
+                        executivo++;
+                        break;
+                }
+                editCar.setCategoria(carro.getCategoria());
+            }
+            if (carro.getAno() != null) {
+                editCar.setAno(carro.getAno());
+            }
+            if (carro.getPreco() != 0.0) {
+                editCar.setPreco(carro.getPreco());
+            }
+
+            System.out.println("Carro de renavam " + renavam + " editado!");
+
+            servidor();
+        }
+    }
 	
 	@Override
 	public synchronized void AdicionarCarro(TiposCarros carro) {
