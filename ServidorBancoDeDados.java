@@ -35,10 +35,19 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
 
 		try {
 		    BancoDeDadosRemoto banco = (BancoDeDadosRemoto) UnicastRemoteObject.exportObject(bancoDeDados, 0);
-
+		    
+		    //Replica 1 banco de dados
 		    LocateRegistry.createRegistry(4099);
 		    Registry register = LocateRegistry.getRegistry("127.0.0.3", 4099);
-		    register.bind("data", banco);
+		    register.bind("datalider", banco);
+		    
+		    //Replica 2 banco de dados
+		    Registry register2 = LocateRegistry.getRegistry("127.0.0.3", 5002);
+		    register2.bind("datalider", banco);
+		    
+		    //Replica 3 banco de dados
+		    register2 = LocateRegistry.getRegistry("127.0.0.3", 5003);
+		    register2.bind("datalider", banco);
 
 		    String hostname = java.net.InetAddress.getLocalHost().getHostName();
 
@@ -53,7 +62,7 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
 	}
 	
 	@Override
-	public void EditarCarro(String renavam, TiposCarros carro) {
+	public synchronized void EditarCarro(String renavam, TiposCarros carro) {
 		TiposCarros editCar = ConsultarCarro(renavam);
 		
 		if(carro.getNome() != null) {
@@ -97,7 +106,7 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
 	}
 	
 	@Override
-	public void AdicionarCarro(TiposCarros carro) {
+	public synchronized void AdicionarCarro(TiposCarros carro) {
 		carros.put(carro.getRenavam(), carro);
 		servidor();
 		
@@ -105,7 +114,7 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
 	}
 
 	@Override
-	public void RemoverCarro(String renavam) {
+	public synchronized void RemoverCarro(String renavam) {
 		TiposCarros carro = ConsultarCarro(renavam);
 		
 		if(carro != null) {
@@ -117,7 +126,7 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
 	}
 
 	@Override
-	public List<TiposCarros> ListaDeCarros() {
+	public synchronized List<TiposCarros> ListaDeCarros() {
 		List<TiposCarros> listaDeCarros = new ArrayList<TiposCarros>();
 		
 		for (Entry<String, TiposCarros> carro : carros.entrySet()) {
@@ -133,7 +142,7 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
 	}
 	
 	@Override
-	public List<TiposCarros> ListaPorCategoria(int categoria) {
+	public synchronized List<TiposCarros> ListaPorCategoria(int categoria) {
 		List<TiposCarros> listaDeCarros = new ArrayList<TiposCarros>();
 		
 		for (Entry<String, TiposCarros> carro : carros.entrySet()) {
@@ -151,7 +160,7 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
 	}
 
 	@Override
-	public TiposCarros ConsultarCarro(String renavam) {
+	public synchronized TiposCarros ConsultarCarro(String renavam) {
 		
 		TiposCarros localizado = null;
 		for (Entry<String, TiposCarros> carro : carros.entrySet()) {
@@ -165,7 +174,7 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
 	}
 
 	@Override
-	public TiposCarros ComprarCarro(String renavam) {
+	public synchronized TiposCarros ComprarCarro(String renavam) {
 		
 		TiposCarros compra = ConsultarCarro(renavam);
 		System.out.println("Carro de renavam " + renavam + " comprado!");
@@ -174,7 +183,7 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
 		return compra;
 	}
 	
-	private void servidor() {
+	private synchronized void servidor() {
 		for (TiposCarros carro : carros.values()) {
             switch (carro.getCategoria()) {
                 case 1:
@@ -193,7 +202,7 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
 	}
 	
 	@Override
-    public void atualizarContagemCategorias() throws RemoteException {
+    public synchronized void atualizarContagemCategorias() throws RemoteException {
         for (TiposCarros carro : carros.values()) {
             switch (carro.getCategoria()) {
                 case 1:
@@ -212,7 +221,7 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto{
     }
 
 	@Override
-	public int quantidade(int categoria) throws RemoteException {
+	public synchronized int quantidade(int categoria) throws RemoteException {
 		servidor();
 		
 		switch(categoria) {

@@ -17,7 +17,7 @@ import java.util.Map.Entry;
 
 public class ServidorLojaDeCarros implements LojaDeCarrosRemota {
 	
-	static String storageHostName = "data";
+	static String chaveBanco[] = {"datalider", "data2", "data3"};
 	static BancoDeDadosRemoto Banco;
 
     private static HashMap<String, TiposCarros> carros = new HashMap<>();	
@@ -29,11 +29,20 @@ public class ServidorLojaDeCarros implements LojaDeCarrosRemota {
 
 		try {
 			LojaDeCarrosRemota ServidorLoja = (LojaDeCarrosRemota) UnicastRemoteObject.exportObject(BancoDeDados, 0);
-
+			
+			// Replica 1
 			LocateRegistry.createRegistry(4097);
 			Registry register = LocateRegistry.getRegistry("127.0.0.2", 4097);
-			register.bind("Storage", ServidorLoja);
+			register.bind("lojalider", ServidorLoja);
 
+			// Replica 2
+			Registry register2 = LocateRegistry.getRegistry("127.0.0.2", 5000);
+			register2.bind("loja2", ServidorLoja);
+			
+			// Replica 3
+			register2 = LocateRegistry.getRegistry("127.0.0.2", 5001);
+			register2.bind("loja3", ServidorLoja);
+			
 			String hostname = java.net.InetAddress.getLocalHost().getHostName();
 			
 			System.out.println("Servidor loja de carro iniciado..." +
@@ -42,7 +51,7 @@ public class ServidorLojaDeCarros implements LojaDeCarrosRemota {
 			System.out.println("\nAguardando conexões...\n");
 			
 			Registry banco = LocateRegistry.getRegistry("127.0.0.3", 4099);
-			Banco = (BancoDeDadosRemoto) banco.lookup(storageHostName);
+			Banco = (BancoDeDadosRemoto) banco.lookup(chaveBanco[0]);
 			
 			System.out.println("Banco de dados conectado.");
 			
