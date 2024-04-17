@@ -28,4 +28,4 @@ Detalhamento dos Requisitos:
 - O servidor de autenticação realiza a verificação de login e senha em uma base de dados própria para usuário legítimos.
 
 Representação da arquitetura proposta:
-![image](https://github.com/MikaelAlvez/Loja-de-carros/assets/47370510/6d70c8c6-3fdf-4515-ac21-db4d39d5395e)
+![image](https://github.com/MikaelAlvez/Loja-de-carros/assets/47370510/2f076076-eb34-4c3e-88aa-e3c258e60115)
