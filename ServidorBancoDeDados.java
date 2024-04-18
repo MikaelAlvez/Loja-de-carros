@@ -33,21 +33,15 @@ public class ServidorBancoDeDados implements BancoDeDadosRemoto {
     }
 
     public static void main(String[] args) throws UnknownHostException {
+    	ServidorBancoDeDados ServidorBD = new ServidorBancoDeDados();
+    	
         try {
-            // Réplica Líder
-            ServidorBancoDeDados servidorLider = new ServidorBancoDeDados();
-            BancoDeDadosRemoto bancoLider = (BancoDeDadosRemoto) UnicastRemoteObject.exportObject(servidorLider, 0);
-            Registry registryLider = LocateRegistry.createRegistry(4099);
-            registryLider.bind(LIDER, bancoLider);
-
-            // Réplicas
-            for (int i = 0; i < CHAVE_REPLICAS.length; i++) {
-                ServidorBancoDeDados replica = new ServidorBancoDeDados();
-                BancoDeDadosRemoto bancoReplica = (BancoDeDadosRemoto) UnicastRemoteObject.exportObject(replica, 0);
-                Registry registryReplica = LocateRegistry.createRegistry(5002 + i);
-                registryReplica.bind(CHAVE_REPLICAS[i], bancoReplica);
-            }
-
+        	ServidorBancoDeDados baseDeDados = (ServidorBancoDeDados) UnicastRemoteObject.exportObject(ServidorBD, 0);
+        	
+            LocateRegistry.createRegistry(4099);
+            Registry register = LocateRegistry.getRegistry("localhost",4099);
+            register.bind("Database", baseDeDados);
+            
             String hostname = java.net.InetAddress.getLocalHost().getHostName();
             System.out.println("Servidores do banco de dados iniciados...");
             System.out.println("[Líder: Porta 4099, Réplicas: Portas 5002, 5003]");

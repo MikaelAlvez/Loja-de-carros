@@ -19,5 +19,13 @@ public interface LojaDeCarrosRemota extends Remote {
 	public int quantidade(int categoria) throws RemoteException;
 	public TiposCarros ComprarCarro(String renavam) throws RemoteException;
 	
+	public TipoReplica getTipo() throws RemoteException;
+	public void setTipo(TipoReplica tip) throws RemoteException;
+	
+	public int getId() throws RemoteException;
+	public void setId(int id) throws RemoteException;
+	
+	public void setReplica() throws RemoteException;
+	public LojaDeCarrosRemota eleicao() throws RemoteException;
 }
 

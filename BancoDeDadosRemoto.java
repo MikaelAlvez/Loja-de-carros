@@ -19,4 +19,5 @@ public interface BancoDeDadosRemoto extends Remote {
 	public TiposCarros ComprarCarro(String renavam) throws RemoteException;
 	
     void atualizarContagemCategorias() throws RemoteException;
+    
 }

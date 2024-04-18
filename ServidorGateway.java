@@ -7,23 +7,37 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ServidorGateway implements GatewayRemoto {
 
 	static String chaveLog = "log";
+	static String storageHostName[] = {"loja1","loja2","loja3"};
 	static AutenticacaoRemota Autenticar;
 	static LojaDeCarrosRemota Loja;
 	@SuppressWarnings("exports")
 	public static Registry registro;
 	
+	static List<LojaDeCarrosRemota> lojas;
+	
 	public static void main(String[] args) throws UnknownHostException {
 		
 		ServidorGateway gateway = new ServidorGateway();
+		lojas = new ArrayList<>();
 		
 		try {
 			Registry autenticar = LocateRegistry.getRegistry("127.0.0.1", 4096);
 			Autenticar = (AutenticacaoRemota) autenticar.lookup(chaveLog);
+			
+			Registry servloja1 = LocateRegistry.getRegistry("localhost", 4097);
+			Loja = (LojaDeCarrosRemota) servloja1.lookup(storageHostName[0]);
+			
+			servloja1 = LocateRegistry.getRegistry("localhost", 5000);
+			Loja = (LojaDeCarrosRemota) servloja1.lookup(storageHostName[1]);
+			
+			servloja1 = LocateRegistry.getRegistry("localhost", 5001);
+			Loja = (LojaDeCarrosRemota) servloja1.lookup(storageHostName[2]);
 			
 			GatewayRemoto ServidorGateway = (GatewayRemoto) UnicastRemoteObject.exportObject(gateway, 0);
 			
